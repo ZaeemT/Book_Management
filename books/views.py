@@ -10,7 +10,10 @@ class BookListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        books = Book.objects.filter(owner=request.user)
+        if request.user.is_superuser:
+            books = Book.objects.all()
+        else:
+            books = Book.objects.filter(owner=request.user)
         serializer = BookSerializer(books, many=True)
         return Response(serializer.data)
     
@@ -21,4 +24,32 @@ class BookListCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
+class BookDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk, user):
+        try:
+            return Book.objects.get(pk=pk, owner=user)
+        except Book.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        book = self.get_object(pk, request.user)
+        if book is not None:
+            serializer = BookSerializer(book)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(status=status.HTTP_404_NOT_FOUND)  
+    
+
+    def put(self, request, pk):
+        book = self.get_object(pk, request.user)
+        if book is not None:
+            serializer = BookSerializer(book, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_404_NOT_FOUND)
     
