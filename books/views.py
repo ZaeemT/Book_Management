@@ -53,3 +53,16 @@ class BookDetailView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_404_NOT_FOUND)
     
+
+    def delete(self, request, pk):
+        book = self.get_object(pk, request.user)
+        if book is not None:
+            book.delete()
+            return Response({
+                'message': 'Book deleted successfully',
+            }, status=status.HTTP_204_NO_CONTENT)
+        return Response({
+            'message': 'Book not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    
